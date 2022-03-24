@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 #include <cuda_runtime.h>
+#include <iostream>
 
 __global__ void setup_kernel(curandState *state)
 {
@@ -32,10 +33,10 @@ int main(void){
     setup_kernel<<<blockCount, threadsPerBlock>>>(devStates);
 
     // Stop the timer
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
+    cudaEventRecord(total_stop, 0);
+    cudaEventSynchronize(total_stop);
     float setup_prng_time;
-    cudaEventElapsedTime(&setup_prng_time, start, stop);
-    std::cout << "Time to initialize " << totalThreads << " thread prng states: " << setup_prng_time << std::endl;
+    cudaEventElapsedTime(&setup_prng_time, total_start, total_stop);
+    std::cout << "Time to initialize " << totalThreads << " thread prng states: " << setup_prng_time << " milliseconds" << std::endl;
 
 }
