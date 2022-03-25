@@ -113,5 +113,6 @@ int main(void){
     time_curand_calls(devStates, 10000000);
     // this roughly corresponds to a 400MB tensor
     time_curand_calls(devStates, 100000000);
+    time_curand_calls(devStates, 1000000000);
     cudaFree(devStates);
 }
