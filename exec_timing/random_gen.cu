@@ -30,32 +30,35 @@ __global__ void curand_call_kernel(curandState *state, int len){
     state[id] = localState;
 }
 
-void time_curand_calls(curandState *devStates, int num_elem){
-    // Create the timer
-    cudaEvent_t total_start, total_stop;
-    cudaEventCreate(&total_start);
-    cudaEventCreate(&total_stop);
-
-    // Start the timer
-    cudaEventRecord(total_start, 0);
-
-    const unsigned int threadsPerBlock = 256;
-    const unsigned int blockCount = 64;
-
-    curand_call_kernel<<<blockCount, threadsPerBlock>>>(devStates, num_elem);
-
-    // Stop the timer
-    cudaEventRecord(total_stop, 0);
-    cudaEventSynchronize(total_stop);
-    float curand_time;
-    cudaEventElapsedTime(&curand_time, total_start, total_stop);
-    std::cout << "Time to uniformly generate " << num_elem << " random numbers: " << curand_time << " milliseconds" << std::endl;
-}
-
 float find_mean(float* arr, int len){
     float sum=0.0;
     for (int i = 0; i < len; ++i) sum += arr[i];
     return sum / len;
+}
+
+void time_curand_calls(curandState *devStates, int num_elem){
+    const unsigned int threadsPerBlock = 256;
+    const unsigned int blockCount = 64;
+    float curand_times[20];
+    for (int i = 0; i < 20; ++i){
+        // Create the timer
+        cudaEvent_t total_start, total_stop;
+        cudaEventCreate(&total_start);
+        cudaEventCreate(&total_stop);
+
+        // Start the timer
+        cudaEventRecord(total_start, 0);
+
+        curand_call_kernel<<<blockCount, threadsPerBlock>>>(devStates, num_elem);
+
+        // Stop the timer
+        cudaEventRecord(total_stop, 0);
+        cudaEventSynchronize(total_stop);
+        std::cout << curand_times+i << std::endl;
+        cudaEventElapsedTime(curand_times+i, total_start, total_stop);
+        std::cout << "Time to uniformly generate " << num_elem << " random numbers: " << curand_times[i] << " milliseconds" << std::endl;
+    }
+    std::cout << find_mean(curand_times, 20);
 }
 
 int main(void){
