@@ -59,10 +59,6 @@ float find_mean(float* arr, int len){
 }
 
 int main(void){
-    // Create the timer
-    cudaEvent_t total_start, total_stop;
-    cudaEventCreate(&total_start);
-    cudaEventCreate(&total_stop);
 
     float times[20];
 
@@ -72,6 +68,11 @@ int main(void){
     const unsigned int totalThreads = threadsPerBlock * blockCount;
 
     for (int i = 0; i < 20; ++i){
+        // Create the timer
+        cudaEvent_t total_start, total_stop;
+        cudaEventCreate(&total_start);
+        cudaEventCreate(&total_stop);
+
         // Start the timer for initializing the random number generator states
         cudaEventRecord(total_start, 0);
         curandState *devStates;
@@ -89,11 +90,16 @@ int main(void){
         std::cout << "Time to initialize " << totalThreads << " thread prng states: " << times[i] << " milliseconds" << std::endl;
         /* Cleanup */
         cudaFree(devStates);
+        cudaEventDestroy(total_start);
+        cudaEventDestroy(total_stop);
     }
 
     std::cout << find_mean(times, 20) << std::endl;
 
+    curandState *devStates;
+    /* Allocate space for prng states on device */
+    cudaMalloc((void**)&devStates, totalThreads * sizeof(curandState));
     // start the timer for making curand calls
     time_curand_calls(devStates, 10);
-
+    cudaFree(devStates);
 }
