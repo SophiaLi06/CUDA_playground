@@ -52,35 +52,48 @@ void time_curand_calls(curandState *devStates, int num_elem){
     std::cout << "Time to uniformly generate " << num_elem << " random numbers: " << curand_time << " milliseconds" << std::endl;
 }
 
+float find_mean(float* arr, int len){
+    float sum=0.0;
+    for (int i = 0; i < len; ++i) sum += arr[i];
+    return sum / len;
+}
+
 int main(void){
     // Create the timer
     cudaEvent_t total_start, total_stop;
     cudaEventCreate(&total_start);
     cudaEventCreate(&total_stop);
 
-    // Start the timer for initializing the random number generator states
-    cudaEventRecord(total_start, 0);
+    float times[20];
 
     // start initializing the random number generator states
     const unsigned int threadsPerBlock = 256;
     const unsigned int blockCount = 64;
     const unsigned int totalThreads = threadsPerBlock * blockCount;
-    curandState *devStates;
 
-    /* Allocate space for prng states on device */
-    cudaMalloc((void**)&devStates, totalThreads * sizeof(curandState));
+    for (int i = 0; i < 20; ++i){
+        // Start the timer for initializing the random number generator states
+        cudaEventRecord(total_start, 0);
+        curandState *devStates;
+
+        /* Allocate space for prng states on device */
+        cudaMalloc((void**)&devStates, totalThreads * sizeof(curandState));
     
-    /* Setup prng states */
-    setup_kernel<<<blockCount, threadsPerBlock>>>(devStates);
+        /* Setup prng states */
+        setup_kernel<<<blockCount, threadsPerBlock>>>(devStates);
 
-    // Stop the timer
-    cudaEventRecord(total_stop, 0);
-    cudaEventSynchronize(total_stop);
-    float setup_prng_time;
-    cudaEventElapsedTime(&setup_prng_time, total_start, total_stop);
-    std::cout << "Time to initialize " << totalThreads << " thread prng states: " << setup_prng_time << " milliseconds" << std::endl;
+        // Stop the timer
+        cudaEventRecord(total_stop, 0);
+        cudaEventSynchronize(total_stop);
+        cudaEventElapsedTime(times + i, total_start, total_stop);
+        std::cout << "Time to initialize " << totalThreads << " thread prng states: " << times[i] << " milliseconds" << std::endl;
+        /* Cleanup */
+        cudaFree(devStates);
+    }
+
+    std::cout << find_mean(times, 20) << std::endl;
 
     // start the timer for making curand calls
-    time_curand_calls(devStates, 10)
+    time_curand_calls(devStates, 10);
 
 }
