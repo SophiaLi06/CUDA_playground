@@ -54,11 +54,12 @@ void time_curand_calls(curandState *devStates, int num_elem){
         // Stop the timer
         cudaEventRecord(total_stop, 0);
         cudaEventSynchronize(total_stop);
-        std::cout << curand_times+i << std::endl;
         cudaEventElapsedTime(curand_times+i, total_start, total_stop);
-        std::cout << "Time to uniformly generate " << num_elem << " random numbers: " << curand_times[i] << " milliseconds" << std::endl;
+
+        cudaEventDestroy(total_start);
+        cudaEventDestroy(total_stop);
     }
-    std::cout << find_mean(curand_times, 20);
+    std::cout << "Average time to uniformly generate " << num_elem << " random numbers: " << find_mean(curand_times, 20) << " milliseconds" << std::endl;
 }
 
 int main(void){
@@ -90,19 +91,27 @@ int main(void){
         cudaEventRecord(total_stop, 0);
         cudaEventSynchronize(total_stop);
         cudaEventElapsedTime(times + i, total_start, total_stop);
-        std::cout << "Time to initialize " << totalThreads << " thread prng states: " << times[i] << " milliseconds" << std::endl;
+        //std::cout << "Time to initialize " << totalThreads << " thread prng states: " << times[i] << " milliseconds" << std::endl;
         /* Cleanup */
         cudaFree(devStates);
         cudaEventDestroy(total_start);
         cudaEventDestroy(total_stop);
     }
 
-    std::cout << find_mean(times, 20) << std::endl;
+    std::cout << "Average time to initialize " << totalThreads << " thread prng states: " <<  find_mean(times, 20) << " milliseconds" << std::endl;
 
     curandState *devStates;
     /* Allocate space for prng states on device */
     cudaMalloc((void**)&devStates, totalThreads * sizeof(curandState));
     // start the timer for making curand calls
     time_curand_calls(devStates, 10);
+    time_curand_calls(devStates, 100);
+    time_curand_calls(devStates, 1000);
+    time_curand_calls(devStates, 10000);
+    time_curand_calls(devStates, 100000);
+    time_curand_calls(devStates, 1000000);
+    time_curand_calls(devStates, 10000000);
+    // this roughly corresponds to a 400MB tensor
+    time_curand_calls(devStates, 100000000);
     cudaFree(devStates);
 }
